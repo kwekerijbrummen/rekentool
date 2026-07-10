@@ -237,8 +237,8 @@
   let btwRates = { ...DEFAULT_BTW };
   let checked = {
     ontwerp_start:true, ontwerp_m2:true,
-    uitzetten_start:true, uitzetten_m2:true,
-    beplanting:true, inplanten:true, km:false
+    uitzetten_start:false, uitzetten_m2:false,
+    beplanting:false, inplanten:false, km:false
   };
   let m2 = 10;
   let km = 0;
@@ -328,7 +328,17 @@
     m2Input.focus();
   });
   kmInput.addEventListener('input', e => { km = e.target.value === '' ? 0 : Number(e.target.value); renderInvoer(); });
-  kmCheck.addEventListener('change', e => { checked.km = e.target.checked; renderInvoer(); });
+  kmCheck.addEventListener('change', e => { setChecked('km', e.target.checked); });
+
+  function setChecked(key, value){
+    checked[key] = value;
+    // Bij aanvinken van "Starttarief leveren & uitzetten" gaat "Leveren & uitzetten" ook meteen aan.
+    // Los weer uit te vinken zonder dat het starttarief meeverandert.
+    if(key === 'uitzetten_start' && value === true){
+      checked.uitzetten_m2 = true;
+    }
+    renderInvoer();
+  }
 
   function checkRowHTML(key, label, sub, amount){
     const on = checked[key];
@@ -381,16 +391,14 @@
 
     document.querySelectorAll('[data-check]').forEach(el => {
       el.addEventListener('change', e => {
-        checked[e.target.dataset.check] = e.target.checked;
-        renderInvoer();
+        setChecked(e.target.dataset.check, e.target.checked);
       });
     });
     document.querySelectorAll('[data-toggle]').forEach(row => {
       row.addEventListener('click', e => {
         if(e.target.tagName === 'INPUT') return;
         const key = row.dataset.toggle;
-        checked[key] = !checked[key];
-        renderInvoer();
+        setChecked(key, !checked[key]);
       });
     });
 
