@@ -1,0 +1,378 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1">
+<title>Border Rekentool</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Quicksand:wght@500;600;700&family=Mulish:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#F5F2EA; --card:#FFFFFF; --line:#EFEAE0; --line-strong:#D9D1BC;
+    --forest:#3D4F3A; --sage:#7C9473; --sand:#E9E2D0; --sandtext:#8B6F47;
+    --muted:#6B7A63; --faint:#A8A297; --faint2:#C6C1B4; --gold:#C9A15A;
+    --input-bg:#FBF9F4; --input-border:#DDD5C2;
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0; min-height:100vh; background:var(--bg); color:var(--forest);
+    font-family:'Mulish',ui-sans-serif,system-ui,sans-serif;
+    display:flex; flex-direction:column; align-items:center;
+    padding:32px 16px 60px;
+  }
+  .qs{ font-family:'Quicksand',ui-sans-serif,system-ui,sans-serif; }
+  .wrap{ width:100%; max-width:560px; }
+
+  .eyebrow{
+    display:inline-block; padding:4px 12px; border-radius:999px;
+    background:var(--sand); color:var(--sandtext); font-size:12px;
+    letter-spacing:.04em; font-weight:600; margin-bottom:12px;
+  }
+  h1{ font-size:26px; font-weight:700; margin:0 0 4px; }
+  .header{ text-align:center; margin-bottom:20px; }
+
+  .leaves{ display:flex; align-items:center; justify-content:center; gap:8px; padding:6px 0; }
+  .leaves span{ display:block; border-radius:999px; }
+
+  .tabs{ display:flex; background:var(--sand); border-radius:16px; padding:4px; margin-bottom:20px; }
+  .tab{
+    flex:1; text-align:center; padding:10px 8px; border-radius:12px; border:none;
+    background:transparent; color:#6B5B3E; font-family:'Quicksand',sans-serif;
+    font-weight:600; font-size:14px; cursor:pointer; transition:all .15s;
+  }
+  .tab.active{ background:var(--forest); color:var(--bg); }
+  .tab:focus-visible{ outline:2px solid var(--sage); outline-offset:2px; }
+
+  .card{
+    background:var(--card); border-radius:24px; padding:26px 24px;
+    box-shadow:0 1px 3px rgba(61,79,58,.08), 0 8px 24px rgba(61,79,58,.06);
+    border:1px solid #EAE4D5;
+  }
+  .intro{ font-size:14px; color:var(--muted); margin:0 0 20px; }
+
+  .colheads{ display:flex; justify-content:flex-end; gap:8px; padding-bottom:8px; font-size:12px; color:var(--faint); }
+  .colheads span:first-child{ width:90px; text-align:right; }
+  .colheads span:last-child{ width:76px; text-align:right; }
+
+  .rate-row{
+    display:flex; align-items:center; justify-content:space-between; gap:16px;
+    padding:12px 0; border-bottom:1px solid var(--line);
+  }
+  .rate-row:last-of-type{ border-bottom:none; }
+  .rate-label{ font-family:'Quicksand',sans-serif; font-weight:700; font-size:14px; color:var(--forest); }
+  .rate-sub{ font-size:12px; color:var(--faint); margin-top:2px; }
+
+  .field-group{ display:flex; align-items:center; gap:8px; }
+  .euro-field{ display:flex; align-items:center; gap:4px; width:90px; }
+  .euro-field span{ font-size:14px; color:var(--muted); }
+  .pct-field{ display:flex; align-items:center; gap:4px; width:76px; }
+  .pct-field span{ font-size:14px; color:var(--muted); }
+
+  input[type=number]{
+    width:100%; border:1px solid var(--input-border); background:var(--input-bg);
+    border-radius:10px; padding:7px 8px; font-size:14px; text-align:right;
+    color:var(--forest); font-family:'Mulish',sans-serif;
+  }
+  input[type=number]:focus-visible{ outline:2px solid var(--sage); outline-offset:1px; }
+
+  .btn-reset{
+    margin-top:18px; font-size:12px; font-family:'Quicksand',sans-serif; font-weight:600;
+    background:#F0EBDD; color:var(--sandtext); border:none; padding:10px 14px;
+    border-radius:999px; cursor:pointer;
+  }
+  .btn-primary{
+    width:100%; margin-top:16px; padding:13px; border-radius:14px; border:none;
+    background:var(--sage); color:#fff; font-family:'Quicksand',sans-serif;
+    font-weight:700; font-size:14px; cursor:pointer;
+  }
+  .btn-ghost{
+    width:100%; margin-top:16px; padding:10px; border-radius:14px; border:none;
+    background:transparent; color:var(--sandtext); font-family:'Quicksand',sans-serif;
+    font-weight:600; font-size:12px; cursor:pointer;
+  }
+
+  .m2-block{ margin-bottom:20px; }
+  .m2-block label{ display:block; font-family:'Quicksand',sans-serif; font-weight:700; font-size:14px; margin-bottom:6px; }
+  .m2-input-row{ display:flex; align-items:center; gap:8px; }
+  .m2-input-row input{
+    flex:1; font-size:18px; font-weight:700; padding:10px 12px; border-radius:14px;
+    text-align:left; font-family:'Quicksand',sans-serif;
+  }
+  .m2-unit{ font-family:'Quicksand',sans-serif; font-weight:600; font-size:14px; color:var(--muted); }
+
+  .check-row{
+    display:flex; align-items:center; gap:12px; padding:10px 8px; margin:0 -8px;
+    border-radius:14px; cursor:pointer; transition:background .15s;
+  }
+  .check-row:hover{ background:rgba(124,148,115,.08); }
+  .check-row input[type=checkbox]{ width:20px; height:20px; accent-color:var(--sage); flex-shrink:0; }
+  .check-info{ flex:1; min-width:0; }
+  .check-label{ font-family:'Quicksand',sans-serif; font-weight:700; font-size:14px; }
+  .check-sub{ font-size:12px; color:var(--faint); margin-top:1px; }
+  .check-amount{ font-family:'Quicksand',sans-serif; font-weight:700; font-size:14px; white-space:nowrap; }
+
+  .km-block{
+    display:flex; align-items:center; gap:12px; padding:10px 8px; margin:4px -8px 0;
+    border-top:1px dashed var(--line); border-radius:14px;
+  }
+  .km-input-row{ display:flex; align-items:center; gap:6px; margin-top:4px; }
+  .km-input-row input{ width:76px; text-align:left; }
+  .km-input-row span{ font-size:12px; color:var(--faint); }
+
+  .totals{ margin-top:20px; padding-top:16px; border-top:1px dashed var(--line-strong); }
+  .totals-line{ display:flex; align-items:center; justify-content:space-between; font-size:14px; padding:4px 0; }
+  .totals-line span:first-child{ color:var(--muted); }
+  .totals-line span:last-child{ font-weight:600; }
+
+  .totals-final{
+    display:flex; align-items:center; justify-content:space-between;
+    margin-top:12px; padding:14px 16px; border-radius:14px; background:var(--forest);
+  }
+  .totals-final span:first-child{ font-family:'Quicksand',sans-serif; font-weight:600; font-size:14px; color:var(--sand); }
+  .totals-final span:last-child{ font-family:'Quicksand',sans-serif; font-weight:700; font-size:22px; color:#fff; }
+
+  [hidden]{ display:none !important; }
+</style>
+</head>
+<body>
+
+<div class="wrap">
+  <div class="header">
+    <div class="eyebrow">BORDER CALCULATOR</div>
+    <h1 class="qs">Ontwerp &amp; inplanten border</h1>
+    <div class="leaves" id="leaves"></div>
+  </div>
+
+  <div class="tabs" role="tablist">
+    <button class="tab" id="tabBtnInstellingen" role="tab" aria-selected="false">1. Instellingen</button>
+    <button class="tab active" id="tabBtnInvoer" role="tab" aria-selected="true">2. Invoer</button>
+  </div>
+
+  <div class="card">
+
+    <!-- INSTELLINGEN -->
+    <div id="paneInstellingen" hidden>
+      <p class="intro">Stel hier de standaardtarieven (incl. btw) en het bijbehorende btw-percentage per categorie in. Het btw%-veld splitst het BTW-inclusieve tarief alleen op in een ex btw bedrag en de btw.</p>
+
+      <div class="colheads"><span>tarief</span><span>btw</span></div>
+
+      <div id="rateRows"></div>
+
+      <button class="btn-reset" id="resetBtn">Terugzetten naar standaard</button>
+      <button class="btn-primary" id="toInvoerBtn">Verder naar invoer →</button>
+    </div>
+
+    <!-- INVOER -->
+    <div id="paneInvoer">
+      <div class="m2-block">
+        <label class="qs">Oppervlakte</label>
+        <div class="m2-input-row">
+          <input type="number" id="m2Input" min="0" inputmode="decimal" value="10">
+          <span class="m2-unit qs">m²</span>
+        </div>
+      </div>
+
+      <div id="checkRows"></div>
+
+      <div class="km-block">
+        <input type="checkbox" id="kmCheck">
+        <div class="check-info">
+          <div class="check-label qs" id="kmLabel">Kilometers</div>
+          <div class="km-input-row">
+            <input type="number" id="kmInput" min="0" inputmode="decimal" value="0">
+            <span id="kmSub"></span>
+          </div>
+        </div>
+        <div class="check-amount qs" id="kmAmount">€ 0,00</div>
+      </div>
+
+      <div class="totals">
+        <div class="totals-line"><span>Subtotaal excl. btw</span><span id="subtotalOut">€ 0,00</span></div>
+        <div class="totals-line"><span>Btw</span><span id="btwOut">€ 0,00</span></div>
+        <div class="totals-final"><span>Totaal incl. btw</span><span id="totalOut">€ 0,00</span></div>
+      </div>
+
+      <button class="btn-ghost" id="toInstellingenBtn">← Tarieven aanpassen</button>
+    </div>
+
+  </div>
+</div>
+
+<script>
+  const DEFAULT_RATES = { starttarief:20, ontwerp:5, beplanting:30, uitzetten:1, inplanten:2, km:0.45 };
+  const DEFAULT_BTW   = { starttarief:0, ontwerp:0, beplanting:0, uitzetten:0, inplanten:0, km:0 };
+  const CATEGORIES = [
+    { key:'ontwerp', label:'Ontwerp', unit:'per m²' },
+    { key:'beplanting', label:'Beplanting', unit:'per m²' },
+    { key:'uitzetten', label:'Uitzetten', unit:'per m²' },
+    { key:'inplanten', label:'Inplanten', unit:'per m²' },
+  ];
+
+  let rates = { ...DEFAULT_RATES };
+  let btwRates = { ...DEFAULT_BTW };
+  let checked = { starttarief:true, ontwerp:true, beplanting:true, uitzetten:true, inplanten:true, km:false };
+  let m2 = 10;
+  let km = 0;
+
+  function euro(n){
+    return (n || 0).toLocaleString('nl-NL', { style:'currency', currency:'EUR' });
+  }
+
+  // leaves divider
+  const leaves = document.getElementById('leaves');
+  for(let i=0;i<14;i++){
+    const s = document.createElement('span');
+    const size = i % 3 === 0 ? 6 : 4;
+    s.style.width = size+'px'; s.style.height = size+'px';
+    s.style.background = i % 2 === 0 ? '#7C9473' : '#C9A15A';
+    s.style.opacity = 0.55 + (i % 3) * 0.15;
+    leaves.appendChild(s);
+  }
+
+  // ---- Tabs ----
+  const tabBtnInstellingen = document.getElementById('tabBtnInstellingen');
+  const tabBtnInvoer = document.getElementById('tabBtnInvoer');
+  const paneInstellingen = document.getElementById('paneInstellingen');
+  const paneInvoer = document.getElementById('paneInvoer');
+
+  function showTab(name){
+    const isInst = name === 'instellingen';
+    paneInstellingen.hidden = !isInst;
+    paneInvoer.hidden = isInst;
+    tabBtnInstellingen.classList.toggle('active', isInst);
+    tabBtnInvoer.classList.toggle('active', !isInst);
+    tabBtnInstellingen.setAttribute('aria-selected', isInst);
+    tabBtnInvoer.setAttribute('aria-selected', !isInst);
+    if(!isInst) renderInvoer();
+  }
+  tabBtnInstellingen.onclick = () => showTab('instellingen');
+  tabBtnInvoer.onclick = () => showTab('invoer');
+  document.getElementById('toInvoerBtn').onclick = () => showTab('invoer');
+  document.getElementById('toInstellingenBtn').onclick = () => showTab('instellingen');
+
+  // ---- Instellingen render ----
+  function rateRowHTML(key, label, sub){
+    return `
+      <div class="rate-row">
+        <div>
+          <div class="rate-label">${label}</div>
+          <div class="rate-sub">${sub}</div>
+        </div>
+        <div class="field-group">
+          <div class="euro-field"><span>€</span><input type="number" min="0" step="0.5" inputmode="decimal" data-rate="${key}" value="${rates[key]}"></div>
+          <div class="pct-field"><input type="number" min="0" max="100" step="0.1" inputmode="decimal" data-btw="${key}" value="${btwRates[key]}"><span>%</span></div>
+        </div>
+      </div>`;
+  }
+
+  function renderRateRows(){
+    let html = rateRowHTML('starttarief', 'Starttarief', 'vast bedrag, ongeacht m²');
+    CATEGORIES.forEach(c => { html += rateRowHTML(c.key, c.label, 'per m²'); });
+    html += rateRowHTML('km', 'Km-prijs', 'per gereden kilometer');
+    document.getElementById('rateRows').innerHTML = html;
+
+    document.querySelectorAll('[data-rate]').forEach(el => {
+      el.addEventListener('input', e => {
+        rates[e.target.dataset.rate] = e.target.value === '' ? 0 : Number(e.target.value);
+      });
+    });
+    document.querySelectorAll('[data-btw]').forEach(el => {
+      el.addEventListener('input', e => {
+        btwRates[e.target.dataset.btw] = e.target.value === '' ? 0 : Number(e.target.value);
+      });
+    });
+  }
+
+  document.getElementById('resetBtn').onclick = () => {
+    rates = { ...DEFAULT_RATES };
+    btwRates = { ...DEFAULT_BTW };
+    renderRateRows();
+  };
+
+  // ---- Invoer render ----
+  const m2Input = document.getElementById('m2Input');
+  const kmInput = document.getElementById('kmInput');
+  const kmCheck = document.getElementById('kmCheck');
+
+  m2Input.addEventListener('input', e => { m2 = e.target.value === '' ? 0 : Number(e.target.value); renderInvoer(); });
+  kmInput.addEventListener('input', e => { km = e.target.value === '' ? 0 : Number(e.target.value); renderInvoer(); });
+  kmCheck.addEventListener('change', e => { checked.km = e.target.checked; renderInvoer(); });
+
+  function checkRowHTML(key, label, sub, amount){
+    const on = checked[key];
+    return `
+      <div class="check-row" data-toggle="${key}">
+        <input type="checkbox" data-check="${key}" ${on ? 'checked' : ''}>
+        <div class="check-info">
+          <div class="check-label" style="color:${on ? 'var(--forest)' : 'var(--faint)'}">${label}</div>
+          <div class="check-sub">${sub}</div>
+        </div>
+        <div class="check-amount" style="color:${on ? 'var(--forest)' : 'var(--faint2)'}">${euro(amount)}</div>
+      </div>`;
+  }
+
+  function renderInvoer(){
+    m2Input.value = m2;
+    kmInput.value = km;
+    kmCheck.checked = checked.km;
+
+    const m2n = Number(m2) || 0;
+    const kmn = Number(km) || 0;
+    // Tarieven zijn INCL. btw. Btw% bepaalt alleen de opsplitsing, niet het totaal.
+    const amountsIncl = { starttarief: Number(rates.starttarief) || 0 };
+    CATEGORIES.forEach(c => { amountsIncl[c.key] = (Number(rates[c.key]) || 0) * m2n; });
+    amountsIncl.km = (Number(rates.km) || 0) * kmn;
+
+    const amountsExcl = {};
+    const amountsBtw = {};
+    Object.keys(amountsIncl).forEach(k => {
+      const pct = Number(btwRates[k]) || 0;
+      const excl = amountsIncl[k] / (1 + pct / 100);
+      amountsExcl[k] = excl;
+      amountsBtw[k] = amountsIncl[k] - excl;
+    });
+
+    let html = checkRowHTML('starttarief', 'Starttarief', `vast bedrag (incl. btw) · ${btwRates.starttarief || 0}% btw`, amountsIncl.starttarief);
+    CATEGORIES.forEach(c => {
+      html += checkRowHTML(c.key, c.label, `${euro(rates[c.key])} ${c.unit} (incl. btw) · ${btwRates[c.key] || 0}% btw`, amountsIncl[c.key]);
+    });
+    document.getElementById('checkRows').innerHTML = html;
+
+    document.querySelectorAll('[data-check]').forEach(el => {
+      el.addEventListener('change', e => {
+        checked[e.target.dataset.check] = e.target.checked;
+        renderInvoer();
+      });
+    });
+    document.querySelectorAll('[data-toggle]').forEach(row => {
+      row.addEventListener('click', e => {
+        if(e.target.tagName === 'INPUT') return;
+        const key = row.dataset.toggle;
+        checked[key] = !checked[key];
+        renderInvoer();
+      });
+    });
+
+    document.getElementById('kmSub').textContent = `km × ${euro(rates.km)} (incl. btw) · ${btwRates.km || 0}% btw`;
+    document.getElementById('kmAmount').textContent = euro(amountsIncl.km);
+    document.getElementById('kmAmount').style.color = checked.km ? 'var(--forest)' : 'var(--faint2)';
+    document.getElementById('kmLabel').style.color = checked.km ? 'var(--forest)' : 'var(--faint)';
+
+    let subtotal = 0, btwBedrag = 0;
+    Object.keys(checked).forEach(k => {
+      if(checked[k]){
+        subtotal += amountsExcl[k] || 0;
+        btwBedrag += amountsBtw[k] || 0;
+      }
+    });
+
+    document.getElementById('subtotalOut').textContent = euro(subtotal);
+    document.getElementById('btwOut').textContent = euro(btwBedrag);
+    document.getElementById('totalOut').textContent = euro(subtotal + btwBedrag);
+  }
+
+  renderRateRows();
+  renderInvoer();
+</script>
+</body>
+</html>
