@@ -212,18 +212,34 @@
 </div>
 
 <script>
-  const DEFAULT_RATES = { starttarief:20, ontwerp:5, beplanting:30, uitzetten:1, inplanten:2, km:0.45 };
-  const DEFAULT_BTW   = { starttarief:0, ontwerp:0, beplanting:0, uitzetten:0, inplanten:0, km:0 };
-  const CATEGORIES = [
-    { key:'ontwerp', label:'Ontwerp', unit:'per m²' },
-    { key:'beplanting', label:'Beplanting', unit:'per m²' },
-    { key:'uitzetten', label:'Uitzetten', unit:'per m²' },
-    { key:'inplanten', label:'Inplanten', unit:'per m²' },
+  const DEFAULT_RATES = {
+    ontwerp_start:20, ontwerp_m2:5,
+    uitzetten_start:20, uitzetten_m2:1,
+    beplanting:30, inplanten:2, km:0.45
+  };
+  const DEFAULT_BTW = {
+    ontwerp_start:0, ontwerp_m2:0,
+    uitzetten_start:0, uitzetten_m2:0,
+    beplanting:0, inplanten:0, km:0
+  };
+  // type: 'fixed' = vast bedrag, 'm2' = per m², 'km' = per kilometer (aparte invoer)
+  const ITEMS = [
+    { key:'ontwerp_start',   label:'Starttarief ontwerp',              type:'fixed', sub:'vast bedrag, ongeacht m²' },
+    { key:'ontwerp_m2',      label:'Ontwerp',                          type:'m2',    sub:'per m²' },
+    { key:'uitzetten_start', label:'Starttarief leveren & uitzetten',  type:'fixed', sub:'vast bedrag, ongeacht m²' },
+    { key:'uitzetten_m2',    label:'Leveren & uitzetten',              type:'m2',    sub:'per m²' },
+    { key:'inplanten',       label:'Inplanten',                        type:'m2',    sub:'per m²' },
+    { key:'beplanting',      label:'Beplanting (stelpost)',            type:'m2',    sub:'per m²' },
+    { key:'km',              label:'Km-prijs',                         type:'km',    sub:'per gereden kilometer' },
   ];
 
   let rates = { ...DEFAULT_RATES };
   let btwRates = { ...DEFAULT_BTW };
-  let checked = { starttarief:true, ontwerp:true, beplanting:true, uitzetten:true, inplanten:true, km:false };
+  let checked = {
+    ontwerp_start:true, ontwerp_m2:true,
+    uitzetten_start:true, uitzetten_m2:true,
+    beplanting:true, inplanten:true, km:false
+  };
   let m2 = 10;
   let km = 0;
 
@@ -279,9 +295,7 @@
   }
 
   function renderRateRows(){
-    let html = rateRowHTML('starttarief', 'Starttarief', 'vast bedrag, ongeacht m²');
-    CATEGORIES.forEach(c => { html += rateRowHTML(c.key, c.label, 'per m²'); });
-    html += rateRowHTML('km', 'Km-prijs', 'per gereden kilometer');
+    const html = ITEMS.map(item => rateRowHTML(item.key, item.label, item.sub)).join('');
     document.getElementById('rateRows').innerHTML = html;
 
     document.querySelectorAll('[data-rate]').forEach(el => {
@@ -336,10 +350,15 @@
 
     const m2n = Number(m2) || 0;
     const kmn = Number(km) || 0;
+
     // Tarieven zijn INCL. btw. Btw% bepaalt alleen de opsplitsing, niet het totaal.
-    const amountsIncl = { starttarief: Number(rates.starttarief) || 0 };
-    CATEGORIES.forEach(c => { amountsIncl[c.key] = (Number(rates[c.key]) || 0) * m2n; });
-    amountsIncl.km = (Number(rates.km) || 0) * kmn;
+    const amountsIncl = {};
+    ITEMS.forEach(item => {
+      const rate = Number(rates[item.key]) || 0;
+      if(item.type === 'fixed') amountsIncl[item.key] = rate;
+      else if(item.type === 'm2') amountsIncl[item.key] = rate * m2n;
+      else if(item.type === 'km') amountsIncl[item.key] = rate * kmn;
+    });
 
     const amountsExcl = {};
     const amountsBtw = {};
@@ -350,9 +369,13 @@
       amountsBtw[k] = amountsIncl[k] - excl;
     });
 
-    let html = checkRowHTML('starttarief', 'Starttarief', `vast bedrag (incl. btw) · ${btwRates.starttarief || 0}% btw`, amountsIncl.starttarief);
-    CATEGORIES.forEach(c => {
-      html += checkRowHTML(c.key, c.label, `${euro(rates[c.key])} ${c.unit} (incl. btw) · ${btwRates[c.key] || 0}% btw`, amountsIncl[c.key]);
+    // Reguliere regels (fixed + m2) in checkRows
+    let html = '';
+    ITEMS.filter(item => item.type !== 'km').forEach(item => {
+      const subText = item.type === 'fixed'
+        ? `vast bedrag (incl. btw) · ${btwRates[item.key] || 0}% btw`
+        : `${euro(rates[item.key])} per m² (incl. btw) · ${btwRates[item.key] || 0}% btw`;
+      html += checkRowHTML(item.key, item.label, subText, amountsIncl[item.key]);
     });
     document.getElementById('checkRows').innerHTML = html;
 
@@ -371,6 +394,7 @@
       });
     });
 
+    // Km-regel (aparte invoer)
     document.getElementById('kmSub').textContent = `km × ${euro(rates.km)} (incl. btw) · ${btwRates.km || 0}% btw`;
     document.getElementById('kmAmount').textContent = euro(amountsIncl.km);
     document.getElementById('kmAmount').style.color = checked.km ? 'var(--forest)' : 'var(--faint2)';
