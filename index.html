@@ -99,6 +99,16 @@
     text-align:left; font-family:'Quicksand',sans-serif;
   }
   .m2-unit{ font-family:'Quicksand',sans-serif; font-weight:600; font-size:14px; color:var(--muted); }
+  .input-clear-wrap{ position:relative; width:120px; }
+  .input-clear-wrap input{ width:100%; padding-right:34px; }
+  .clear-x{
+    position:absolute; right:6px; top:50%; transform:translateY(-50%);
+    width:24px; height:24px; border:none; background:transparent;
+    color:#D64545; font-size:15px; font-weight:600; line-height:1;
+    cursor:pointer; display:flex; align-items:center; justify-content:center;
+  }
+  .clear-x:active{ color:#B23A3A; }
+  .clear-x:focus-visible{ outline:2px solid #D64545; outline-offset:1px; border-radius:4px; }
 
   .check-row{
     display:flex; align-items:center; gap:12px; padding:10px 8px; margin:0 -8px;
@@ -167,7 +177,10 @@
       <div class="m2-block">
         <label class="qs">Oppervlakte</label>
         <div class="m2-input-row">
-          <input type="number" id="m2Input" min="0" inputmode="decimal" value="10">
+          <div class="input-clear-wrap">
+            <input type="number" id="m2Input" min="0" inputmode="decimal" value="10">
+            <button type="button" id="m2ClearBtn" class="clear-x" aria-label="Wis m²">✕</button>
+          </div>
           <span class="m2-unit qs">m²</span>
         </div>
       </div>
@@ -295,6 +308,11 @@
   const kmCheck = document.getElementById('kmCheck');
 
   m2Input.addEventListener('input', e => { m2 = e.target.value === '' ? 0 : Number(e.target.value); renderInvoer(); });
+  document.getElementById('m2ClearBtn').addEventListener('click', () => {
+    m2 = '';
+    renderInvoer();
+    m2Input.focus();
+  });
   kmInput.addEventListener('input', e => { km = e.target.value === '' ? 0 : Number(e.target.value); renderInvoer(); });
   kmCheck.addEventListener('change', e => { checked.km = e.target.checked; renderInvoer(); });
 
