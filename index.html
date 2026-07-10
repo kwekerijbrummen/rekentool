@@ -324,6 +324,12 @@
   m2Input.addEventListener('input', e => { m2 = e.target.value === '' ? 0 : Number(e.target.value); renderInvoer(); });
   document.getElementById('m2ClearBtn').addEventListener('click', () => {
     m2 = '';
+    km = 0;
+    checked = {
+      ontwerp_start:true, ontwerp_m2:true,
+      uitzetten_start:false, uitzetten_m2:false,
+      beplanting:false, inplanten:false, km:false
+    };
     renderInvoer();
     m2Input.focus();
   });
