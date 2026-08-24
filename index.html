@@ -233,8 +233,33 @@
     { key:'km',              label:'Km-prijs',                         type:'km',    sub:'per gereden kilometer' },
   ];
 
-  let rates = { ...DEFAULT_RATES };
-  let btwRates = { ...DEFAULT_BTW };
+  const STORAGE_KEY = 'borderrekentool_tarieven_v1';
+
+  function loadSavedRates(){
+    try{
+      const raw = localStorage.getItem(STORAGE_KEY);
+      if(!raw) return null;
+      const saved = JSON.parse(raw);
+      return {
+        rates: { ...DEFAULT_RATES, ...(saved.rates || {}) },
+        btwRates: { ...DEFAULT_BTW, ...(saved.btwRates || {}) }
+      };
+    } catch(e){
+      return null;
+    }
+  }
+
+  function saveRates(){
+    try{
+      localStorage.setItem(STORAGE_KEY, JSON.stringify({ rates, btwRates }));
+    } catch(e){
+      // opslag niet beschikbaar (bv. privémodus) - stil negeren
+    }
+  }
+
+  const saved = loadSavedRates();
+  let rates = saved ? saved.rates : { ...DEFAULT_RATES };
+  let btwRates = saved ? saved.btwRates : { ...DEFAULT_BTW };
   let checked = {
     ontwerp_start:true, ontwerp_m2:true,
     uitzetten_start:false, uitzetten_m2:false,
@@ -301,11 +326,13 @@
     document.querySelectorAll('[data-rate]').forEach(el => {
       el.addEventListener('input', e => {
         rates[e.target.dataset.rate] = e.target.value === '' ? 0 : Number(e.target.value);
+        saveRates();
       });
     });
     document.querySelectorAll('[data-btw]').forEach(el => {
       el.addEventListener('input', e => {
         btwRates[e.target.dataset.btw] = e.target.value === '' ? 0 : Number(e.target.value);
+        saveRates();
       });
     });
   }
@@ -313,6 +340,7 @@
   document.getElementById('resetBtn').onclick = () => {
     rates = { ...DEFAULT_RATES };
     btwRates = { ...DEFAULT_BTW };
+    saveRates();
     renderRateRows();
   };
 
