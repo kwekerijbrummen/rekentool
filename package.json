@@ -1,0 +1,14 @@
+{
+  "name": "borderrekentool",
+  "private": true,
+  "description": "Interne border rekentool",
+  "scripts": {
+    "test": "node --test"
+  },
+  "engines": {
+    "node": ">=22.12.0"
+  },
+  "dependencies": {
+    "@netlify/blobs": "11.1.3"
+  }
+}

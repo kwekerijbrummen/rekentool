@@ -3,6 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1">
+<meta name="robots" content="noindex, nofollow">
 <title>Border Rekentool</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Quicksand:wght@500;600;700&family=Mulish:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -79,6 +80,18 @@
     margin-top:18px; font-size:12px; font-family:'Quicksand',sans-serif; font-weight:600;
     background:#F0EBDD; color:var(--sandtext); border:none; padding:10px 14px;
     border-radius:999px; cursor:pointer;
+  }
+  .btn-save{
+    width:100%; margin-top:18px; padding:13px; border-radius:14px; border:none;
+    background:var(--forest); color:#fff; font-family:'Quicksand',sans-serif;
+    font-weight:700; font-size:14px; cursor:pointer; transition:opacity .15s;
+  }
+  .btn-save:disabled{ opacity:.4; cursor:default; }
+  .save-status{ margin:10px 0 0; font-size:13px; text-align:center; color:var(--sage); }
+  .save-status.fout{ color:#B23A3A; }
+  .load-error{
+    margin:0 0 16px; padding:10px 14px; border-radius:14px; font-size:13px;
+    background:#FBEAEA; color:#B23A3A;
   }
   .btn-primary{
     width:100%; margin-top:16px; padding:13px; border-radius:14px; border:none;
@@ -158,6 +171,8 @@
     <button class="tab active" id="tabBtnInvoer" role="tab" aria-selected="true">2. Invoer</button>
   </div>
 
+  <p class="load-error" id="loadError" role="alert" hidden></p>
+
   <div class="card">
 
     <!-- INSTELLINGEN -->
@@ -167,6 +182,9 @@
       <div class="colheads"><span>tarief</span><span>btw</span></div>
 
       <div id="rateRows"></div>
+
+      <button class="btn-save" id="saveBtn" disabled>Opslaan</button>
+      <p class="save-status" id="saveStatus" role="status" hidden></p>
 
       <button class="btn-reset" id="resetBtn">Terugzetten naar standaard</button>
       <button class="btn-primary" id="toInvoerBtn">Verder naar invoer →</button>
@@ -233,33 +251,39 @@
     { key:'km',              label:'Km-prijs',                         type:'km',    sub:'per gereden kilometer' },
   ];
 
-  const STORAGE_KEY = 'borderrekentool_tarieven_v1';
+  // Centrale tarieven en btw-percentages (Netlify Blobs via /api/instellingen).
+  // Nog niets centraal opgeslagen → DEFAULT_RATES / DEFAULT_BTW.
+  const API_INSTELLINGEN = '/api/instellingen';
 
-  function loadSavedRates(){
+  let rates = { ...DEFAULT_RATES };
+  let btwRates = { ...DEFAULT_BTW };
+  let opgeslagenJSON = null;   // laatst centraal geladen/opgeslagen stand; null = (nog) niet geladen
+  let bezigMetOpslaan = false;
+
+  function huidigeJSON(){
+    return JSON.stringify({ rates, btwRates });
+  }
+
+  function toepassen(inst){
+    rates = { ...DEFAULT_RATES, ...((inst && inst.rates) || {}) };
+    btwRates = { ...DEFAULT_BTW, ...((inst && inst.btwRates) || {}) };
+  }
+
+  async function laadInstellingen(){
     try{
-      const raw = localStorage.getItem(STORAGE_KEY);
-      if(!raw) return null;
-      const saved = JSON.parse(raw);
-      return {
-        rates: { ...DEFAULT_RATES, ...(saved.rates || {}) },
-        btwRates: { ...DEFAULT_BTW, ...(saved.btwRates || {}) }
-      };
+      const r = await fetch(API_INSTELLINGEN, { cache:'no-store', credentials:'same-origin' });
+      if(r.status === 401){ location.href = '/inloggen'; return; }
+      if(!r.ok) throw new Error('status ' + r.status);
+      const data = await r.json();
+      toepassen(data.instellingen);
+      opgeslagenJSON = huidigeJSON();
     } catch(e){
-      return null;
+      const melding = document.getElementById('loadError');
+      melding.textContent = 'De centrale tarieven konden niet worden geladen; er worden tijdelijk de standaardtarieven getoond. Herlaad de pagina.';
+      melding.hidden = false;
     }
   }
 
-  function saveRates(){
-    try{
-      localStorage.setItem(STORAGE_KEY, JSON.stringify({ rates, btwRates }));
-    } catch(e){
-      // opslag niet beschikbaar (bv. privémodus) - stil negeren
-    }
-  }
-
-  const saved = loadSavedRates();
-  let rates = saved ? saved.rates : { ...DEFAULT_RATES };
-  let btwRates = saved ? saved.btwRates : { ...DEFAULT_BTW };
   let checked = {
     ontwerp_start:true, ontwerp_m2:true,
     uitzetten_start:false, uitzetten_m2:false,
@@ -326,22 +350,77 @@
     document.querySelectorAll('[data-rate]').forEach(el => {
       el.addEventListener('input', e => {
         rates[e.target.dataset.rate] = e.target.value === '' ? 0 : Number(e.target.value);
-        saveRates();
+        updateSaveBtn();
       });
     });
     document.querySelectorAll('[data-btw]').forEach(el => {
       el.addEventListener('input', e => {
         btwRates[e.target.dataset.btw] = e.target.value === '' ? 0 : Number(e.target.value);
-        saveRates();
+        updateSaveBtn();
       });
     });
   }
 
+  // ---- Centraal opslaan ----
+  const saveBtn = document.getElementById('saveBtn');
+  const saveStatus = document.getElementById('saveStatus');
+  let statusTimer = null;
+
+  function toonStatus(tekst, fout){
+    clearTimeout(statusTimer);
+    saveStatus.textContent = tekst;
+    saveStatus.classList.toggle('fout', !!fout);
+    saveStatus.hidden = false;
+    if(!fout) statusTimer = setTimeout(() => { saveStatus.hidden = true; }, 2500);
+  }
+
+  function updateSaveBtn(){
+    const gewijzigd = opgeslagenJSON !== null && huidigeJSON() !== opgeslagenJSON;
+    saveBtn.disabled = bezigMetOpslaan || !gewijzigd;
+    if(gewijzigd && !saveStatus.classList.contains('fout')) saveStatus.hidden = true;
+  }
+
+  async function slaCentraalOp(){
+    if(bezigMetOpslaan || opgeslagenJSON === null) return;
+    const teVersturen = huidigeJSON();
+    bezigMetOpslaan = true;
+    saveBtn.textContent = 'Opslaan…';
+    updateSaveBtn();
+    try{
+      const r = await fetch(API_INSTELLINGEN, {
+        method:'PUT', credentials:'same-origin',
+        headers:{ 'Content-Type':'application/json' },
+        body: teVersturen
+      });
+      if(r.status === 401) throw new Error('Je bent niet (meer) ingelogd. Herlaad de pagina en log opnieuw in.');
+      const data = await r.json().catch(() => null);
+      if(!r.ok || !data || !data.instellingen) throw new Error((data && data.fout) || 'Opslaan is mislukt. Probeer het opnieuw.');
+      opgeslagenJSON = JSON.stringify(data.instellingen);
+      toonStatus('Opgeslagen', false);
+    } catch(e){
+      toonStatus((e && e.message && !/fetch|network/i.test(e.message)) ? e.message : 'Opslaan is mislukt (geen verbinding). Probeer het opnieuw.', true);
+    } finally {
+      bezigMetOpslaan = false;
+      saveBtn.textContent = 'Opslaan';
+      updateSaveBtn();
+    }
+  }
+
+  saveBtn.onclick = () => {
+    saveStatus.classList.remove('fout');
+    slaCentraalOp();
+  };
+
   document.getElementById('resetBtn').onclick = () => {
+    if(bezigMetOpslaan) return;
     rates = { ...DEFAULT_RATES };
     btwRates = { ...DEFAULT_BTW };
-    saveRates();
     renderRateRows();
+    saveStatus.classList.remove('fout');
+    updateSaveBtn();
+    if(opgeslagenJSON === null) toonStatus('Centrale tarieven zijn niet geladen; herlaad de pagina.', true);
+    else if(!saveBtn.disabled) slaCentraalOp();
+    else toonStatus('Standaardtarieven zijn al de centrale instelling', false);
   };
 
   // ---- Invoer render ----
@@ -455,8 +534,11 @@
     document.getElementById('totalOut').textContent = euro(subtotal + btwBedrag);
   }
 
-  renderRateRows();
-  renderInvoer();
+  laadInstellingen().then(() => {
+    renderRateRows();
+    renderInvoer();
+    updateSaveBtn();
+  });
 </script>
 </body>
 </html>

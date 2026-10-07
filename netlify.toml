@@ -1,0 +1,15 @@
+[build]
+  publish = "public"
+
+[build.environment]
+  # @netlify/blobs vereist Node 22.12 of nieuwer.
+  NODE_VERSION = "22"
+
+[functions]
+  directory = "netlify/functions"
+
+# Interne rekentool: nooit indexeren door zoekmachines (ook het inlogscherm).
+[[headers]]
+  for = "/*"
+  [headers.values]
+    X-Robots-Tag = "noindex, nofollow"
