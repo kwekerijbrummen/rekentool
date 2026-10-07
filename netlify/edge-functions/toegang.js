@@ -53,6 +53,17 @@ function pagina(status, melding) {
     color:#fff; font-family:'Quicksand',sans-serif; font-weight:700; font-size:14px; cursor:pointer;
   }
   .melding{ margin:14px 0 0; font-size:14px; color:#B23A3A; }
+  .ww-veld{ position:relative; }
+  .ww-veld input{ padding-right:48px; }
+  .ww-veld .oog{
+    position:absolute; right:4px; top:50%; transform:translateY(-50%);
+    width:40px; height:40px; margin:0; padding:0; border-radius:10px; background:transparent;
+    color:#6B7A63; display:flex; align-items:center; justify-content:center;
+    -webkit-tap-highlight-color:transparent;
+  }
+  .ww-veld .oog:focus-visible{ outline:2px solid #7C9473; outline-offset:-2px; }
+  .ww-veld .oog svg{ width:22px; height:22px; }
+  .oog[aria-pressed="true"] .oog-open, .oog[aria-pressed="false"] .oog-dicht{ display:none; }
 </style>
 </head>
 <body>
@@ -63,10 +74,29 @@ function pagina(status, melding) {
   </div>
   <form class="card" method="post" action="/inloggen">
     <label for="wachtwoord">Wachtwoord</label>
-    <input id="wachtwoord" name="wachtwoord" type="password" autocomplete="current-password" autocapitalize="off" autocorrect="off" spellcheck="false" required autofocus>
+    <div class="ww-veld">
+      <input id="wachtwoord" name="wachtwoord" type="password" autocomplete="current-password" autocapitalize="off" autocorrect="off" spellcheck="false" required autofocus>
+      <button type="button" class="oog" id="oog" aria-label="Wachtwoord tonen" aria-controls="wachtwoord" aria-pressed="false">
+        <svg class="oog-open" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/></svg>
+        <svg class="oog-dicht" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9.9 5.2A10.6 10.6 0 0 1 12 5c6.5 0 10 7 10 7a17.6 17.6 0 0 1-2.6 3.6M6.6 6.6C3.7 8.5 2 12 2 12s3.5 7 10 7a10 10 0 0 0 5.4-1.6"/><path d="M9.9 9.9a3 3 0 0 0 4.2 4.2"/><path d="M2 2l20 20"/></svg>
+      </button>
+    </div>
     <button type="submit">Inloggen</button>
 ${melding ? '    <p class="melding">' + melding + '</p>\n' : ''}  </form>
 </div>
+<script>
+  (function () {
+    var veld = document.getElementById('wachtwoord');
+    var knop = document.getElementById('oog');
+    knop.addEventListener('click', function () {
+      var tonen = veld.type === 'password';
+      veld.type = tonen ? 'text' : 'password';
+      knop.setAttribute('aria-label', tonen ? 'Wachtwoord verbergen' : 'Wachtwoord tonen');
+      knop.setAttribute('aria-pressed', tonen ? 'true' : 'false');
+      veld.focus();
+    });
+  })();
+</script>
 </body>
 </html>
 `;
