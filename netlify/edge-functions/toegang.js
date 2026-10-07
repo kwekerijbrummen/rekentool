@@ -76,7 +76,25 @@ ${melding ? '    <p class="melding">' + melding + '</p>\n' : ''}  </form>
   });
 }
 
+// netlify.toml [[headers]] geldt alleen voor statische bestanden van het CDN,
+// niet voor responses die deze edge function zelf maakt (inlogscherm,
+// doorverwijzingen, 401). Daarom hier op elke response, ook die van context.next().
+function metRobotsHeader(response) {
+  try {
+    response.headers.set('X-Robots-Tag', 'noindex, nofollow');
+    return response;
+  } catch (e) {
+    const kopie = new Response(response.body, response);
+    kopie.headers.set('X-Robots-Tag', 'noindex, nofollow');
+    return kopie;
+  }
+}
+
 export default async function toegang(request, context) {
+  return metRobotsHeader(await afhandelen(request, context));
+}
+
+async function afhandelen(request, context) {
   const wachtwoord = Netlify.env.get('REKENTOOL_WACHTWOORD') || '';
   const pad = new URL(request.url).pathname;
   const geldig = await cookieGeldig(wachtwoord, leesCookie(request.headers.get('cookie')), nu());

@@ -119,3 +119,15 @@ test('functie instellingen controleert zelf de cookie', async function () {
     }
   }
 });
+
+test('X-Robots-Tag op elke response van de edge function', async function () {
+  const b = browser();
+  const pad = [['GET', '/inloggen'], ['GET', '/'], ['GET', '/api/instellingen'], ['POST', '/inloggen', { wachtwoord: 'fout' }]];
+  for (const [m, p, f] of pad) assert.equal((await b.vraag(m, p, f)).r.headers.get('x-robots-tag'), 'noindex, nofollow', m + ' ' + p);
+  const ok = await b.vraag('POST', '/inloggen', { wachtwoord: WW });
+  assert.equal(ok.r.headers.get('x-robots-tag'), 'noindex, nofollow');
+  for (const p of ['/', '/api/instellingen', '/inloggen']) {
+    const a = await b.vraag('GET', p);
+    assert.equal(a.r.headers.get('x-robots-tag'), 'noindex, nofollow', 'ingelogd ' + p);
+  }
+});
